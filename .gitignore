@@ -1,0 +1,5 @@
+# Bazel
+/bazel-*
+/.bazelrc.user
+/gen/
+/protos/
