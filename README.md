@@ -22,8 +22,23 @@ bazel build //src:option_pricing_server
 
 ### Running
 
-Just start it via the following bazel command.
+Just start it via the following bazel command. Note that it doesn't currently do anything yet.
 
 ```bash
 bazel run //src:option_pricing_server
 ```
+
+### Future Enhancements
+
+- Extending the option_pricing_server.cpp to run a gRPC service accepting the protobufs from 
+[snagdy/finance_protos](https://github.com/snagdy/finance_protos) and using them to vend option premiums from the default Black-Scholes pricing model.
+
+- Adding additional pricing models, and the ability to select which is used for vending an option premium.
+
+- The ability to submit batch requests.
+
+- The ability to request option greeks, prices, or both.
+
+# License
+
+This project is licensed under the MIT License - see the LICENSE file for detials.
