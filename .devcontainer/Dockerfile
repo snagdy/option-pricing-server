@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    tree \
     git \
     python3 \
     python3-pip \
@@ -14,7 +15,6 @@ RUN apt-get update && apt-get install -y \
     wget \
     apt-transport-https \
     gnupg \
-    protobuf-compiler \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install GitHub CLI
@@ -32,17 +32,14 @@ RUN useradd -ms /bin/bash vscode
 RUN mkdir -p /tmp/proto_files /tmp/gen_files
 
 # Copy proto files from separate image into a temporary location
-COPY --from=ghcr.io/snagdy/finance_protos:sha-03df67e /protos/options/black_scholes.proto /tmp/proto_files/
-COPY --from=ghcr.io/snagdy/finance_protos:sha-03df67e /gen/cpp/options/ /tmp/gen_files/
+COPY --from=ghcr.io/snagdy/finance_protos:sha-ace6114 /protos/finance/options/ /tmp/protos/
 
 # Verify files were copied correctly
 RUN ls -la /tmp/proto_files/ && ls -la /tmp/gen_files/
 
 # Install GitHub CLI and Bazelisk (shortened for clarity)
 ARG BAZELISK_VERSION=v1.10.1
-RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
-    # ... rest of GitHub CLI installation
-    ARCH=$(uname -m) && \
+RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; \
     elif [ "$ARCH" = "aarch64" ]; then ARCH="arm64"; \
     else echo "Unsupported architecture: $ARCH" && exit 1; fi && \

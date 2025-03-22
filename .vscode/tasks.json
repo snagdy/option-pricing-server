@@ -7,13 +7,23 @@
             "command": "bazel",
             "args": [
                 "build",
-                "//src:black_scholes_pricer"
+                "//src:option_pricing_server",
+                "--jobs=8",
             ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Run Option Pricing Server",
+            "type": "shell",
+            "command": "bazel",
+            "args": [
+                "run",
+                "//src:option_pricing_server"
+            ]
         },
         {
             "label": "Clean Bazel Workspace",

@@ -11,65 +11,45 @@ else
   echo "Skipping SSH configuration; no keys found."
 fi
 
-# Create directories for proto files
-mkdir -p /workspaces/option_pricing_server/protos
-mkdir -p /workspaces/option_pricing_server/gen/finance/options
+# Create target directories for Bazel
+mkdir -p /workspaces/option_pricing_server/protos/finance/options
 
-# Check if proto files exist in tmp directory
-if [ -d "/tmp/proto_files" ] && [ "$(ls -A /tmp/proto_files)" ]; then
-  echo "Copying proto files from temporary location..."
-  cp -r /tmp/proto_files/* /workspaces/option_pricing_server/protos/
+# Copy generated files from the Dockerfile's temporary location
+if [ -d "/tmp/protos" ] && [ "$(ls -A /tmp/protos)" ]; then
+  echo "Copying .proto from temporary location..."
+  cp -r /tmp/protos/* /workspaces/option_pricing_server/protos/finance/options/
+  echo ".proto files copied successfully"
 else
-  echo "Warning: Proto files not found in /tmp/proto_files"
-  
-  # Alternative: Try to copy directly from the image
-  echo "Attempting to copy proto files directly..."
-  docker run --rm --entrypoint /bin/sh ghcr.io/snagdy/finance_protos:sha-03df67e -c "cat /protos/options/black_scholes.proto" > /workspaces/option_pricing_server/protos/black_scholes.proto
-  if [ $? -eq 0 ]; then
-    echo "Successfully copied proto file directly from image"
-  else
-    echo "Failed to copy proto file. Please check image and paths."
-  fi
+  echo "Error: .proto files not found in /tmp/protos"
+  exit 1
 fi
 
-# Check if generated files exist in tmp directory
-if [ -d "/tmp/gen_files" ] && [ "$(ls -A /tmp/gen_files)" ]; then
-  echo "Copying generated files to gen/finance/options structure..."
-  mkdir -p /workspaces/option_pricing_server/gen/finance/options
-  cp -r /tmp/gen_files/* /workspaces/option_pricing_server/gen/finance/options/
-else
-  echo "Warning: Generated files not found in /tmp/gen_files"
-fi
-
-# Create BUILD file for protos directory
-cat > /workspaces/option_pricing_server/protos/BUILD << 'EOF'
+# Create BUILD file for the protos directory 
+# necessary as this need to be generated on devcontainer creation
+cat > /workspaces/option_pricing_server/protos/finance/options/BUILD << 'EOF'
 load("@rules_proto//proto:defs.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_proto_library")
+load("@grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
 
+# Generated headers and source files only
 proto_library(
-    name = "option_pricing_proto",
-    srcs = glob(["*.proto"]),
-    visibility = ["//visibility:public"],
+    name = "black_scholes_proto",
+    srcs = ["black_scholes.proto"],
 )
 
 cc_proto_library(
-    name = "option_pricing_proto_cc",
+    name = "black_scholes_cc_proto",
+    deps = [":black_scholes_proto"],
     visibility = ["//visibility:public"],
-    deps = [":option_pricing_proto"],
+)
+
+cc_grpc_library(
+    name = "black_scholes_cc_grpc",
+    srcs = [":black_scholes_proto"],
+    grpc_only = True,
+    deps = [":black_scholes_cc_proto"],
+    visibility = ["//visibility:public"],
 )
 EOF
 
-# Create BUILD file for gen directory
-mkdir -p /workspaces/option_pricing_server/gen
-cat > /workspaces/option_pricing_server/gen/BUILD << 'EOF'
-package(default_visibility = ["//visibility:public"])
-
-cc_library(
-    name = "finance_proto_headers",
-    hdrs = glob(["**/*.pb.h", "**/*.pb.cc"]),
-    includes = ["."],
-    strip_include_prefix = "/gen",  # This strips "gen" from include paths
-)
-EOF
-
-echo "Created BUILD files in protos and gen directories"
+echo "Created BUILD file in finance/options directory"
