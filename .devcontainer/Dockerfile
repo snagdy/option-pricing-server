@@ -1,6 +1,4 @@
-FROM ubuntu:22.04
-
-ENV DEBIAN_FRONTEND=noninteractive
+FROM mcr.microsoft.com/vscode/devcontainers/base:debian-11
 
 # Install essential dependencies
 RUN apt-get update && apt-get install -y \
@@ -24,9 +22,6 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
     && apt-get update \
     && apt-get install -y gh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Create vscode user
-RUN useradd -ms /bin/bash vscode
 
 # Create temporary directories for proto files
 RUN mkdir -p /tmp/proto_files /tmp/gen_files
