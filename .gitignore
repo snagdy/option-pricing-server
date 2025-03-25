@@ -2,4 +2,4 @@
 /bazel-*
 /.bazelrc.user
 /gen/
-/protos/
+/proto/

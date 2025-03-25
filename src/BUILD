@@ -12,8 +12,8 @@ cc_binary(
     srcs = ["option_pricing_server.cpp"],
     deps = [
         ":black_scholes_pricer_lib",
-        "//protos/finance/options:black_scholes_cc_proto",
-        "//protos/finance/options:black_scholes_cc_grpc",
+        "//proto/finance/options:black_scholes_cc_proto",
+        "//proto/finance/options:black_scholes_cc_grpc",
         "@grpc//:grpc++",
         "@grpc//:grpc",
     ],

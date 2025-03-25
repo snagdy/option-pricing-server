@@ -1,6 +1,6 @@
 #include "black_scholes_pricer.h"
-#include "protos/finance/options/black_scholes.pb.h"
-#include "protos/finance/options/black_scholes.grpc.pb.h"
+#include "proto/finance/options/black_scholes.pb.h"
+#include "proto/finance/options/black_scholes.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
 #include <memory>
 #include <string>
@@ -31,6 +31,7 @@ public:
         double S = params.stock_price();
         double K = params.strike_price();
         double r = params.risk_free_rate();
+        double q = params.dividend_rate();
         double sigma = params.volatility();
         double T = params.time_to_maturity();
         OptionType option_type = params.option_type();
@@ -42,13 +43,19 @@ public:
         }
 
         // Calculate the option price based on the option type
-        double option_price = 0.0;
+        double option_price, option_delta, option_gamma, option_vega = 0.0;
         switch (option_type) {
             case OptionType::CALL:
-                option_price = pricer.calculateCall(S, K, r, sigma, T);
+                option_price = pricer.calculateCallPrice(S, K, r, q, sigma, T);
+                option_delta = pricer.calculateCallDelta(S, K, r, q, sigma, T);
+                option_gamma = pricer.calculateGamma(S, K, r, q, sigma, T);
+                option_vega = pricer.calculateVega(S, K, r, q, sigma, T);
                 break;
             case OptionType::PUT:
-                option_price = pricer.calculatePut(S, K, r, sigma, T);
+                option_price = pricer.calculatePutPrice(S, K, r, q, sigma, T);
+                option_delta = pricer.calculatePutDelta(S, K, r, q, sigma, T);
+                option_gamma = pricer.calculateGamma(S, K, r, q, sigma, T);
+                option_vega = pricer.calculateVega(S, K, r, q, sigma, T);
                 break;
             default:
                 return Status(grpc::StatusCode::INVALID_ARGUMENT, "Unknown option type");
@@ -57,6 +64,9 @@ public:
         // Set the response
         response->set_option_price(option_price);
         response->set_option_type(option_type);
+        response->set_delta(option_delta);
+        response->set_gamma(option_gamma);
+        response->set_vega(option_vega);
 
         // Return success status
         return Status::OK;

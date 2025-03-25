@@ -27,7 +27,7 @@ RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | d
 RUN mkdir -p /tmp/proto_files /tmp/gen_files
 
 # Copy proto files from separate image into a temporary location
-COPY --from=ghcr.io/snagdy/finance_protos:sha-ace6114 /protos/finance/options/ /tmp/protos/
+COPY --from=ghcr.io/snagdy/finance_protos:latest /proto/finance/options/ /tmp/proto/
 
 # Verify files were copied correctly
 RUN ls -la /tmp/proto_files/ && ls -la /tmp/gen_files/
