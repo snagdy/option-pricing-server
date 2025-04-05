@@ -15,6 +15,18 @@ RUN apt-get update && apt-get install -y \
     gnupg \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Install clang-format only (without the full Clang compiler)
+RUN apt-get update && apt-get install -y \
+    clang-format \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create a basic .clang-format configuration file
+RUN echo "---\nLanguage: Cpp\nBasedOnStyle: Google\nIndentWidth: 4\nTabWidth: 4\nUseTab: Never\nColumnLimit: 100\nAllowShortFunctionsOnASingleLine: Empty\nAllowShortIfStatementsOnASingleLine: false\nAllowShortLoopsOnASingleLine: false\nBreakBeforeBraces: Attach\nNamespaceIndentation: None\nPointerAlignment: Left\n..." > /.clang-format
+
+# Add a convenient script to format code
+RUN echo '#!/bin/bash\nfind "${1:-.}" -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.cc" | xargs clang-format -i' > /usr/local/bin/format-cpp && \
+    chmod +x /usr/local/bin/format-cpp
+
 # Install GitHub CLI
 RUN curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
     && chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \

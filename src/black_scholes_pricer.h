@@ -2,26 +2,29 @@
 #define BLACK_SCHOLES_PRICE_H
 
 class BlackScholesOptionPricer {
-private:
+   public:
     // Calculate the standard normal cumulative distribution function
-    double normalCDF(double x);
-    
+    static double normalCDF(double x);
+
     // Calculate d1 and d2 parameters for Black-Scholes formula
-    void calculateD1D2(double S, double K, double r, double q, double sigma, double T,
-                      double& d1, double& d2);
+    static void calculateD1D2(const double& S, const double& K, const double& r, const double& q,
+                              const double& sigma, const double& T, double& d1, double& d2);
 
-public:
     // Calculate call option price
-    double calculateCallPrice(double S, double K, double r, double q, double sigma, double T);
-    double calculateCallDelta(double S, double K, double r, double q, double sigma, double T);
-    
-    // Calculate put option price using put-call parity
-    double calculatePutPrice(double S, double K, double r, double q, double sigma, double T);
-    double calculatePutDelta(double S, double K, double r, double q, double sigma, double T);
+    static double calculateCallPrice(const double& S, const double& K, const double& r,
+                                     const double& q, const double& T, double& d1, double& d2);
+    static double calculateCallDelta(const double& d1);
 
-    // Common greeks
-    double calculateGamma(double S, double K, double r, double q, double sigma, double T);
-    double calculateVega(double S, double K, double r, double q, double sigma, double T);
+    // Calculate put option price
+    static double calculatePutPrice(const double& S, const double& K, const double& r,
+                                    const double& q, const double& T, const double& d1,
+                                    const double& d2);
+    static double calculatePutDelta(const double& d1);
+
+    // Common greek calculations
+    static double calculateGamma(const double& S, const double& sigma, const double& T,
+                                 const double& d1);
+    static double calculateVega(const double& S, const double& T, const double& d1);
 };
 
-#endif // BLACK_SCHOLES_PRICER_H
+#endif  // BLACK_SCHOLES_PRICER_H

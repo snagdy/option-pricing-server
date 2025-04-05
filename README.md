@@ -35,9 +35,7 @@ bazel run //src:option_pricing_server
 
 - Adding additional pricing models, and the ability to select which is used for vending an option premium.
 
-- The ability to submit batch requests.
-
-- The ability to request option greeks, prices, or both.
+- The ability to submit batch requests for vectors of inputs to calculate grids of option data.
 
 # License
 

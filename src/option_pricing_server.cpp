@@ -1,31 +1,33 @@
-#include "black_scholes_pricer.h"
-#include "proto/finance/options/black_scholes.pb.h"
-#include "proto/finance/options/black_scholes.grpc.pb.h"
 #include <grpcpp/grpcpp.h>
-#include <memory>
-#include <string>
-#include <iostream>
+#include <spdlog/spdlog.h>
 
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
+#include <fstream>
+#include <iostream>
+#include <memory>
+#include <nlohmann/json.hpp>
+#include <stdexcept>
+#include <string>
+
+#include "black_scholes_options.h"
+#include "proto/finance/options/black_scholes.grpc.pb.h"
+#include "proto/finance/options/black_scholes.pb.h"
+
 using finance::options::BlackScholesParameters;
 using finance::options::OptionPricingRequest;
 using finance::options::OptionPricingResponse;
 using finance::options::OptionPricingService;
 using finance::options::OptionType;
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::Status;
 
 // Implementation of the OptionPricingService
 class OptionPricingServiceImpl final : public OptionPricingService::Service {
-    private:
-        BlackScholesOptionPricer pricer;
-
-public:
+   public:
     // Implement the RPC method defined in the proto file
-    Status CalculateOptionPrice(ServerContext* context, 
-                               const OptionPricingRequest* request,
-                               OptionPricingResponse* response) override {
+    Status CalculateOptionPrice(ServerContext* context, const OptionPricingRequest* request,
+                                OptionPricingResponse* response) override {
         // Extract parameters from the request
         const BlackScholesParameters& params = request->parameters();
         double S = params.stock_price();
@@ -37,28 +39,37 @@ public:
         OptionType option_type = params.option_type();
 
         // Validate inputs to avoid potential errors
-        if (S <= 0 || K <= 0 || sigma <= 0 || T <= 0) {
-            return Status(grpc::StatusCode::INVALID_ARGUMENT, 
-                         "Invalid parameters: Stock price, strike price, volatility, and time to maturity must be positive");
+        if (S <= 0 || K <= 0 || q < 0 || sigma <= 0 || T <= 0) {
+            std::string invalid_argument_message =
+                "Invalid parameters: Stock price, strike price, volatility, and time to maturity "
+                "must be positive, and dividend must be non-negative";
+            spdlog::error(invalid_argument_message);
+            return Status(grpc::StatusCode::INVALID_ARGUMENT, invalid_argument_message);
         }
 
         // Calculate the option price based on the option type
-        double option_price, option_delta, option_gamma, option_vega = 0.0;
+        double option_price = 0.0, option_delta = 0.0, option_gamma = 0.0, option_vega = 0.0;
         switch (option_type) {
-            case OptionType::CALL:
-                option_price = pricer.calculateCallPrice(S, K, r, q, sigma, T);
-                option_delta = pricer.calculateCallDelta(S, K, r, q, sigma, T);
-                option_gamma = pricer.calculateGamma(S, K, r, q, sigma, T);
-                option_vega = pricer.calculateVega(S, K, r, q, sigma, T);
+            case OptionType::CALL: {
+                BlackScholesCall blackScholesCall{S, K, r, q, sigma, T};
+                option_price = blackScholesCall.price;
+                option_delta = blackScholesCall.delta;
+                option_gamma = blackScholesCall.gamma;
+                option_vega = blackScholesCall.vega;
                 break;
-            case OptionType::PUT:
-                option_price = pricer.calculatePutPrice(S, K, r, q, sigma, T);
-                option_delta = pricer.calculatePutDelta(S, K, r, q, sigma, T);
-                option_gamma = pricer.calculateGamma(S, K, r, q, sigma, T);
-                option_vega = pricer.calculateVega(S, K, r, q, sigma, T);
+            }
+            case OptionType::PUT: {
+                BlackScholesPut blackScholesPut{S, K, r, q, sigma, T};
+                option_price = blackScholesPut.price;
+                option_delta = blackScholesPut.delta;
+                option_gamma = blackScholesPut.gamma;
+                option_vega = blackScholesPut.vega;
                 break;
+            }
             default:
-                return Status(grpc::StatusCode::INVALID_ARGUMENT, "Unknown option type");
+                std::string unknown_option_message = "Unknown option type";
+                spdlog::error(unknown_option_message);
+                return Status(grpc::StatusCode::INVALID_ARGUMENT, unknown_option_message);
         }
 
         // Set the response
@@ -73,7 +84,6 @@ public:
     }
 };
 
-
 void RunServer(const std::string& server_address) {
     OptionPricingServiceImpl service;
 
@@ -82,20 +92,56 @@ void RunServer(const std::string& server_address) {
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
     // Register "service" as the instance through which we'll communicate with clients
     builder.RegisterService(&service);
-    
+
     // Assemble and start the server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    std::cout << "Server listening on " << server_address << std::endl;
+    spdlog::info("Server listening on {}", server_address);
+    // std::cout << "Server listening on " << server_address << std::endl;
 
     // Wait for the server to shutdown
     server->Wait();
 }
 
+struct Config {
+    std::string server_address;
+    int port;
+};
+
+Config initialise_configs() {
+    const std::string CONFIG_FILEPATH = "/workspaces/option_pricing_server/conf/server_config.json";
+    std::ifstream file(CONFIG_FILEPATH);
+    if (!file.is_open()) {
+        spdlog::critical("Unable to open config file.");
+        std::exit(EXIT_FAILURE);
+    }
+
+    nlohmann::json config_json;
+    try {
+        file >> config_json;
+
+        if (!config_json.contains("server") || !config_json["server"].contains("address") ||
+            !config_json["server"].contains("port")) {
+            spdlog::critical(
+                "Required configuration fields missing, check for server, server.address, and "
+                "server.port in {}",
+                CONFIG_FILEPATH);
+        }
+
+        Config config_struct;
+        config_struct.server_address = config_json["server"]["address"];
+        config_struct.port = config_json["server"]["port"];
+        return config_struct;
+    } catch (nlohmann::json::parse_error& e) {
+        spdlog::critical("Parsing JSON config failed. JSON parse error: {}", e.what());
+        std::exit(EXIT_FAILURE);
+    }
+}
+
 int main(int argc, char** argv) {
-    // TODO(snagdy): change this to read it from a configuration file.
-    // Default to localhost:50051 if no address specified
-    std::string server_address = "0.0.0.0:50051";
-    
+    Config config_struct = initialise_configs();
+    std::string server_address =
+        config_struct.server_address + ":" + std::to_string(config_struct.port);
+
     if (argc > 1) {
         server_address = argv[1];
     }
