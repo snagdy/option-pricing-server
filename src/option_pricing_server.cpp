@@ -11,6 +11,7 @@
 #include "black_scholes_options.h"
 #include "proto/finance/options/black_scholes.grpc.pb.h"
 #include "proto/finance/options/black_scholes.pb.h"
+#include "tools/cpp/runfiles/runfiles.h"
 
 using finance::options::BlackScholesParameters;
 using finance::options::OptionPricingRequest;
@@ -84,53 +85,63 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
     }
 };
 
-void RunServer(const std::string& server_address) {
+void runServer(const std::string& serverAddressAndPort) {
     OptionPricingServiceImpl service;
 
     ServerBuilder builder;
     // Listen on the given address without any authentication mechanism
-    builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
+    builder.AddListeningPort(serverAddressAndPort, grpc::InsecureServerCredentials());
     // Register "service" as the instance through which we'll communicate with clients
     builder.RegisterService(&service);
 
     // Assemble and start the server
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    spdlog::info("Server listening on {}", server_address);
-    // std::cout << "Server listening on " << server_address << std::endl;
+    spdlog::info("Server listening on {}", serverAddressAndPort);
 
     // Wait for the server to shutdown
     server->Wait();
 }
 
 struct Config {
-    std::string server_address;
+    std::string serverAddress;
     int port;
 };
 
-Config initialise_configs() {
-    const std::string CONFIG_FILEPATH = "/workspaces/option_pricing_server/conf/server_config.json";
+Config initialiseConfigs(const std::string& argv0) {
+    using bazel::tools::cpp::runfiles::Runfiles;
+
+    std::string error;
+    std::unique_ptr<Runfiles> runfiles(Runfiles::Create(argv0, &error));
+    if (!runfiles) {
+        // std::cerr << "Failed to create Runfiles: " << error << "\n";
+        spdlog::critical("Failed to create Runfiles: {}", error);
+        std::exit(EXIT_FAILURE);
+    }
+
+    const std::string CONFIG_FILEPATH = runfiles->Rlocation("option_pricing_server/conf/server_config.json");
+    spdlog::info("Config file expected at: {}", CONFIG_FILEPATH);
     std::ifstream file(CONFIG_FILEPATH);
     if (!file.is_open()) {
         spdlog::critical("Unable to open config file.");
         std::exit(EXIT_FAILURE);
     }
 
-    nlohmann::json config_json;
+    nlohmann::json configJson;
     try {
-        file >> config_json;
+        file >> configJson;
 
-        if (!config_json.contains("server") || !config_json["server"].contains("address") ||
-            !config_json["server"].contains("port")) {
+        if (!configJson.contains("server") || !configJson["server"].contains("address") ||
+            !configJson["server"].contains("port")) {
             spdlog::critical(
                 "Required configuration fields missing, check for server, server.address, and "
                 "server.port in {}",
                 CONFIG_FILEPATH);
         }
 
-        Config config_struct;
-        config_struct.server_address = config_json["server"]["address"];
-        config_struct.port = config_json["server"]["port"];
-        return config_struct;
+        Config configStruct;
+        configStruct.serverAddress = configJson["server"]["address"];
+        configStruct.port = configJson["server"]["port"];
+        return configStruct;
     } catch (nlohmann::json::parse_error& e) {
         spdlog::critical("Parsing JSON config failed. JSON parse error: {}", e.what());
         std::exit(EXIT_FAILURE);
@@ -138,14 +149,10 @@ Config initialise_configs() {
 }
 
 int main(int argc, char** argv) {
-    Config config_struct = initialise_configs();
-    std::string server_address =
-        config_struct.server_address + ":" + std::to_string(config_struct.port);
+    Config configStruct = initialiseConfigs(argv[0]);
+    std::string serverAddressAndPort =
+        configStruct.serverAddress + ":" + std::to_string(configStruct.port);
 
-    if (argc > 1) {
-        server_address = argv[1];
-    }
-
-    RunServer(server_address);
+    runServer(serverAddressAndPort);
     return 0;
 }

@@ -3,6 +3,7 @@ FROM mcr.microsoft.com/vscode/devcontainers/base:debian-11
 # Install essential dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
+    gdb \
     curl \
     tree \
     git \
@@ -44,7 +45,7 @@ COPY --from=ghcr.io/snagdy/finance_protos:latest /proto/finance/options/ /tmp/pr
 # Verify files were copied correctly
 RUN ls -la /tmp/proto_files/ && ls -la /tmp/gen_files/
 
-# Install GitHub CLI and Bazelisk (shortened for clarity)
+# Install Bazelisk
 ARG BAZELISK_VERSION=v1.10.1
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" = "x86_64" ]; then ARCH="amd64"; \

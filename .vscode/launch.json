@@ -5,7 +5,7 @@
             "name": "Launch C++ binary",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bazel-bin/src/main",
+            "program": "${workspaceFolder}/bazel-bin/src/option_pricing_server",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

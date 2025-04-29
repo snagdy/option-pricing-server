@@ -12,7 +12,7 @@ This project uses Bazel for building and managing dependencies. It has an includ
 - C++ compiler
 - Protocol Buffers
 
-### Building
+### Building in Devcontainer
 
 Currently, you do this from within the devcontainer. A task has been defined to do this also.
 
@@ -20,18 +20,31 @@ Currently, you do this from within the devcontainer. A task has been defined to 
 bazel build //src:option_pricing_server
 ```
 
-### Running
+### Running in Devcontainer
 
 Just start it via the following bazel command. Note that it doesn't currently do anything yet.
 
 ```bash
 bazel run //src:option_pricing_server
 ```
+## Building via Docker
+
+```bash
+docker build -t option-pricing-server .
+```
+
+
+### Running via Docker
+
+This assumes you've configured the container port exposed, and the application config port to 8080
+
+```bash
+docker run --name option-pricing-server option-pricing-server:latest -d -p 8080:8080
+```
 
 ### Future Enhancements
 
-- Extending the option_pricing_server.cpp to run a gRPC service accepting the protobufs from 
-[snagdy/finance_protos](https://github.com/snagdy/finance_protos) and using them to vend option premiums from the default Black-Scholes pricing model.
+- Adding an implied vol gRPC service
 
 - Adding additional pricing models, and the ability to select which is used for vending an option premium.
 

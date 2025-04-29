@@ -1,0 +1,1 @@
+exports_files(["server_config.json"])

@@ -17,6 +17,23 @@
             "problemMatcher": []
         },
         {
+            "label": "Debug Build Bazel Target",
+            "type": "shell",
+            "command": "bazel",
+            "args": [
+                "build",
+                "-c",
+                "dbg",
+                "//src:option_pricing_server",
+                "--jobs=8",
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "Run Option Pricing Server",
             "type": "shell",
             "command": "bazel",

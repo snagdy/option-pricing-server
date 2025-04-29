@@ -15,9 +15,6 @@
         "SSH_AUTH_SOCK": "/ssh-agent",
         "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}"
     },
-    "settings": {
-        "terminal.integrated.defaultProfile.linux": "bash"
-    },
     "customizations": {
         "vscode": {
             "extensions": [
@@ -26,7 +23,10 @@
                 "BazelBuild.vscode-bazel",
                 "ms-azuretools.vscode-docker",
                 "zxh404.vscode-proto3"
-                ]
+            ]
+        },
+        "settings": {
+            "terminal.integrated.defaultProfile.linux": "bash"
         }
     },
     "forwardPorts": [],

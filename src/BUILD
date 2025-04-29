@@ -26,6 +26,8 @@ cc_binary(
         "@grpc//:grpc",
         "@spdlog//:spdlog",
         "@nlohmann_json//:json",
+        "@bazel_tools//tools/cpp/runfiles",
     ],
+    data = ["//conf:server_config.json"],
     includes = ["."]
 )
