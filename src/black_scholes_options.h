@@ -43,4 +43,42 @@ class BlackScholesPut {
     double vega;
 };
 
+class BlackScholesCallImpliedVol {
+   private:
+    const double P; 
+    const double S;
+    const double K;
+    const double r;
+    const double q;
+    const double T;
+    double d1;
+    double d2;
+
+   public:
+    BlackScholesCallImpliedVol(const double& P, const double& S, const double& K, const double& r, const double& q, const double& T);
+    double implied_vol;
+    double delta;
+    double gamma;
+    double vega;
+};
+
+class BlackScholesPutImpliedVol {
+   private:
+    const double P;
+    const double S;
+    const double K;
+    const double r;
+    const double q;
+    const double T;
+    double d1;
+    double d2;
+
+   public:
+    BlackScholesPutImpliedVol(const double& P, const double& S, const double& K, const double& r, const double& q, const double& T);
+    double implied_vol;
+    double delta;
+    double gamma;
+    double vega;
+};
+
 #endif  // BLACK_SCHOLES_OPTIONS_H

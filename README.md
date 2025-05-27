@@ -33,7 +33,6 @@ bazel run //src:option_pricing_server
 docker build -t option-pricing-server .
 ```
 
-
 ### Running via Docker
 
 This assumes you've configured the container port exposed, and the application config port to 8080
