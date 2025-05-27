@@ -19,7 +19,7 @@ void BlackScholesOptionPricer::calculateD1D2(const double& S, const double& K, c
 
 double BlackScholesOptionPricer::calculateCallPrice(const double& S, const double& K,
                                                     const double& r, const double& q,
-                                                    const double& T, const double& d1, 
+                                                    const double& T, const double& d1,
                                                     const double& d2) {
     return S * exp(-q * T) * normalCDF(d1) - K * exp(-r * T) * normalCDF(d2);
 }
@@ -50,12 +50,9 @@ double BlackScholesOptionPricer::calculateVega(const double& S, const double& T,
 }
 
 // implied vol calculation via Newton's method for convergence
-double BlackScholesOptionPricer::calculateImpliedVolatility(const double& P, 
-                                                            const double& S, 
-                                                            const double& K, 
-                                                            const double& r, 
-                                                            const double& q, 
-                                                            const double& T,
+double BlackScholesOptionPricer::calculateImpliedVolatility(const double& P, const double& S,
+                                                            const double& K, const double& r,
+                                                            const double& q, const double& T,
                                                             const PricerOptionType& option_type,
                                                             const double& sigma_guess) {
     const int max_iterations = 1000;
@@ -63,11 +60,10 @@ double BlackScholesOptionPricer::calculateImpliedVolatility(const double& P,
     double sigma = sigma_guess;
     double d1;
     double d2;
-    std::function<double(const double& S, const double& K,
-                         const double& r, const double& q,
-                         const double& T, const double& d1, 
-                         const double& d)>
-                         price_function = option_type == PricerOptionType::PUT ? calculatePutPrice : calculateCallPrice;
+    std::function<double(const double& S, const double& K, const double& r, const double& q,
+                         const double& T, const double& d1, const double& d)>
+        price_function =
+            option_type == PricerOptionType::PUT ? calculatePutPrice : calculateCallPrice;
 
     for (int i = 0; i < max_iterations; ++i) {
         calculateD1D2(S, K, r, q, sigma, T, d1, d2);

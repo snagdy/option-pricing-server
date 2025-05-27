@@ -1,10 +1,7 @@
 #ifndef BLACK_SCHOLES_PRICE_H
 #define BLACK_SCHOLES_PRICE_H
 
-enum class PricerOptionType {
-    PUT,
-    CALL
-};
+enum class PricerOptionType { PUT, CALL };
 
 class BlackScholesOptionPricer {
    public:
@@ -17,7 +14,7 @@ class BlackScholesOptionPricer {
 
     // calculate call option price
     static double calculateCallPrice(const double& S, const double& K, const double& r,
-                                     const double& q, const double& T, const double& d1, 
+                                     const double& q, const double& T, const double& d1,
                                      const double& d2);
     static double calculateCallDelta(const double& d1);
 
@@ -33,12 +30,8 @@ class BlackScholesOptionPricer {
     static double calculateVega(const double& S, const double& T, const double& d1);
 
     // calculate option implied vol
-    static double calculateImpliedVolatility(const double& P, 
-                                             const double& S, 
-                                             const double& K, 
-                                             const double& r, 
-                                             const double& q, 
-                                             const double& T,
+    static double calculateImpliedVolatility(const double& P, const double& S, const double& K,
+                                             const double& r, const double& q, const double& T,
                                              const PricerOptionType& option_type,
                                              const double& sigma_guess);
 };

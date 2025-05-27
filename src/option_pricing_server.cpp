@@ -13,12 +13,12 @@
 #include "proto/finance/options/black_scholes.pb.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
-using finance::options::BlackScholesParameters;
 using finance::options::BlackScholesImpliedVolParameters;
-using finance::options::OptionPricingRequest;
+using finance::options::BlackScholesParameters;
 using finance::options::OptionImpliedVolRequest;
-using finance::options::OptionPricingResponse;
 using finance::options::OptionImpliedVolResponse;
+using finance::options::OptionPricingRequest;
+using finance::options::OptionPricingResponse;
 using finance::options::OptionPricingService;
 using finance::options::OptionType;
 using grpc::Server;
@@ -100,7 +100,8 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
 
         if (S <= 0 || K <= 0 || q < 0 || P <= 0 || T <= 0) {
             std::string invalid_argument_message =
-                "Invalid parameters: Stock price, strike price, option premium, and time to maturity "
+                "Invalid parameters: Stock price, strike price, option premium, and time to "
+                "maturity "
                 "must be positive, and dividend must be non-negative";
             spdlog::error(invalid_argument_message);
             return Status(grpc::StatusCode::INVALID_ARGUMENT, invalid_argument_message);
@@ -139,8 +140,6 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
     }
 };
 
-
-
 void runServer(const std::string& serverAddressAndPort) {
     OptionPricingServiceImpl service;
 
@@ -174,7 +173,8 @@ Config initialiseConfigs(const std::string& argv0) {
         std::exit(EXIT_FAILURE);
     }
 
-    const std::string CONFIG_FILEPATH = runfiles->Rlocation("option_pricing_server/conf/server_config.json");
+    const std::string CONFIG_FILEPATH =
+        runfiles->Rlocation("option_pricing_server/conf/server_config.json");
     spdlog::info("Config file expected at: {}", CONFIG_FILEPATH);
     std::ifstream file(CONFIG_FILEPATH);
     if (!file.is_open()) {
