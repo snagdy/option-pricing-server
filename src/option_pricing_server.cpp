@@ -42,6 +42,11 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
         double T = params.time_to_maturity();
         OptionType option_type = params.option_type();
 
+        spdlog::info(
+            "Received option pricing request: type: {}, underlying: {}, strike: {}, RFR: {}, "
+            "dividend rate: {}, sigma: {}, expiration: {}",
+            option_type == OptionType::CALL ? "CALL" : "PUT", S, K, r, q, sigma, T);
+
         // Validate inputs to avoid potential errors
         if (S <= 0 || K <= 0 || q < 0 || sigma <= 0 || T <= 0) {
             std::string invalid_argument_message =
@@ -97,6 +102,11 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
         double q = params.dividend_rate();
         double T = params.time_to_maturity();
         OptionType option_type = params.option_type();
+
+        spdlog::info(
+            "Received option implied vol request: type: {}, premium: {}, underlying: {}, strike: "
+            "{}, RFR: {}, dividend rate: {}, expiration: {}",
+            option_type == OptionType::CALL ? "CALL" : "PUT", P, S, K, r, q, T);
 
         if (S <= 0 || K <= 0 || q < 0 || P <= 0 || T <= 0) {
             std::string invalid_argument_message =
