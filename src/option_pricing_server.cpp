@@ -13,7 +13,10 @@
 #include "proto/finance/options/black_scholes.pb.h"
 #include "tools/cpp/runfiles/runfiles.h"
 
+using finance::options::BlackScholesImpliedVolParameters;
 using finance::options::BlackScholesParameters;
+using finance::options::OptionImpliedVolRequest;
+using finance::options::OptionImpliedVolResponse;
 using finance::options::OptionPricingRequest;
 using finance::options::OptionPricingResponse;
 using finance::options::OptionPricingService;
@@ -38,6 +41,11 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
         double sigma = params.volatility();
         double T = params.time_to_maturity();
         OptionType option_type = params.option_type();
+
+        spdlog::info(
+            "Received option pricing request: type: {}, underlying: {}, strike: {}, RFR: {}, "
+            "dividend rate: {}, sigma: {}, expiration: {}",
+            option_type == OptionType::CALL ? "CALL" : "PUT", S, K, r, q, sigma, T);
 
         // Validate inputs to avoid potential errors
         if (S <= 0 || K <= 0 || q < 0 || sigma <= 0 || T <= 0) {
@@ -83,6 +91,63 @@ class OptionPricingServiceImpl final : public OptionPricingService::Service {
         // Return success status
         return Status::OK;
     }
+
+    Status CalculateImpliedVol(ServerContext* context, const OptionImpliedVolRequest* request,
+                               OptionImpliedVolResponse* response) override {
+        const BlackScholesImpliedVolParameters& params = request->parameters();
+        double P = params.option_premium();
+        double S = params.stock_price();
+        double K = params.strike_price();
+        double r = params.risk_free_rate();
+        double q = params.dividend_rate();
+        double T = params.time_to_maturity();
+        OptionType option_type = params.option_type();
+
+        spdlog::info(
+            "Received option implied vol request: type: {}, premium: {}, underlying: {}, strike: "
+            "{}, RFR: {}, dividend rate: {}, expiration: {}",
+            option_type == OptionType::CALL ? "CALL" : "PUT", P, S, K, r, q, T);
+
+        if (S <= 0 || K <= 0 || q < 0 || P <= 0 || T <= 0) {
+            std::string invalid_argument_message =
+                "Invalid parameters: Stock price, strike price, option premium, and time to "
+                "maturity "
+                "must be positive, and dividend must be non-negative";
+            spdlog::error(invalid_argument_message);
+            return Status(grpc::StatusCode::INVALID_ARGUMENT, invalid_argument_message);
+        }
+        double option_implied_vol = 0.0, option_delta = 0.0, option_gamma = 0.0, option_vega = 0.0;
+        switch (option_type) {
+            case OptionType::CALL: {
+                BlackScholesCallImpliedVol blackScholesCallImpliedVol{P, S, K, r, q, T};
+                option_implied_vol = blackScholesCallImpliedVol.implied_vol;
+                option_delta = blackScholesCallImpliedVol.delta;
+                option_gamma = blackScholesCallImpliedVol.gamma;
+                option_vega = blackScholesCallImpliedVol.vega;
+                break;
+            }
+            case OptionType::PUT: {
+                BlackScholesPutImpliedVol blackScholesPutImpliedVol{P, S, K, r, q, T};
+                option_implied_vol = blackScholesPutImpliedVol.implied_vol;
+                option_delta = blackScholesPutImpliedVol.delta;
+                option_gamma = blackScholesPutImpliedVol.gamma;
+                option_vega = blackScholesPutImpliedVol.vega;
+                break;
+            }
+            default:
+                std::string unknown_option_message = "Unknown option type";
+                spdlog::error(unknown_option_message);
+                return Status(grpc::StatusCode::INVALID_ARGUMENT, unknown_option_message);
+        }
+
+        response->set_implied_volatility(option_implied_vol);
+        response->set_option_type(option_type);
+        response->set_delta(option_delta);
+        response->set_gamma(option_gamma);
+        response->set_vega(option_vega);
+
+        return Status::OK;
+    }
 };
 
 void runServer(const std::string& serverAddressAndPort) {
@@ -118,7 +183,8 @@ Config initialiseConfigs(const std::string& argv0) {
         std::exit(EXIT_FAILURE);
     }
 
-    const std::string CONFIG_FILEPATH = runfiles->Rlocation("option_pricing_server/conf/server_config.json");
+    const std::string CONFIG_FILEPATH =
+        runfiles->Rlocation("option_pricing_server/conf/server_config.json");
     spdlog::info("Config file expected at: {}", CONFIG_FILEPATH);
     std::ifstream file(CONFIG_FILEPATH);
     if (!file.is_open()) {

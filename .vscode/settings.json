@@ -1,6 +1,7 @@
 {
     "remote.autoForwardPortsFallback": 0,
     "files.associations": {
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "random": "cpp"
     }
 }
