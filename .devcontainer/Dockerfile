@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/vscode/devcontainers/base:debian-11
+FROM mcr.microsoft.com/vscode/devcontainers/base:debian-12
 
 # Install essential dependencies
 RUN apt-get update && apt-get install -y \
@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     unzip \
-    openjdk-11-jdk \
+    openjdk-17-jdk \
     wget \
     apt-transport-https \
     gnupg \
